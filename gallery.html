@@ -656,6 +656,17 @@
             }
         });
     });
+        document.querySelectorAll('.star-node').forEach(star => {
+  star.addEventListener('click', () => {
+    const driveLink = star.dataset.gdriveLink;
+    if (driveLink) {
+      window.open(driveLink, '_blank'); // opens in new tab
+    } else {
+      console.error('No Google Drive link found for this star');
+    }
+  });
+});
+
     </script>
 
     <footer class="enhanced-footer">
