@@ -525,149 +525,172 @@
             </div>
     </div>
     
-    <script src="script.js" defer></script>
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const starNodes = document.querySelectorAll('.star-node');
-        const modal = document.getElementById('gallery-modal');
-        const modalContent = document.getElementById('modal-content');
-        
-        const starmap = document.getElementById('starmap');
-        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-        if (starmap && !isMobile && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-            starmap.addEventListener('mousemove', (e) => {
-                const { width, height, left, top } = starmap.getBoundingClientRect();
-                const x = e.clientX - left; const y = e.clientY - top;
-                const moveX = (x - width / 2) / width * -40; const moveY = (y - height / 2) / height * -40;
-                starmap.style.transform = `scale(1.1) rotateX(${moveY}deg) rotateY(${moveX}deg)`;
-            });
-            starmap.addEventListener('mouseleave', () => { starmap.style.transform = 'scale(1) rotateX(0deg) rotateY(0deg)'; });
-        }
-        
-        starNodes.forEach(star => {
-            const lineIDs = star.dataset.lines.split(',');
-            star.addEventListener('mouseenter', () => lineIDs.forEach(id => document.getElementById(id)?.classList.add('is-active')));
-            star.addEventListener('mouseleave', () => lineIDs.forEach(id => document.getElementById(id)?.classList.remove('is-active')));
+   <script src="script.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const starNodes = document.querySelectorAll('.star-node');
+    const modal = document.getElementById('gallery-modal');
+    const modalContent = document.getElementById('modal-content');
+    
+    // Parallax effect for starmap (keep this as is)
+    const starmap = document.getElementById('starmap');
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    if (starmap && !isMobile && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        starmap.addEventListener('mousemove', (e) => {
+            const { width, height, left, top } = starmap.getBoundingClientRect();
+            const x = e.clientX - left; const y = e.clientY - top;
+            const moveX = (x - width / 2) / width * -40; const moveY = (y - height / 2) / height * -40;
+            starmap.style.transform = `scale(1.1) rotateX(${moveY}deg) rotateY(${moveX}deg)`;
         });
+        starmap.addEventListener('mouseleave', () => { starmap.style.transform = 'scale(1) rotateX(0deg) rotateY(0deg)'; });
+    }
+    
+    // Constellation line hover effect (keep this as is)
+    starNodes.forEach(star => {
+        const lineIDs = star.dataset.lines.split(',');
+        star.addEventListener('mouseenter', () => lineIDs.forEach(id => document.getElementById(id)?.classList.add('is-active')));
+        star.addEventListener('mouseleave', () => lineIDs.forEach(id => document.getElementById(id)?.classList.remove('is-active')));
+    });
 
-        const shootingStarsContainer = document.querySelector('.shooting-stars');
-        if (shootingStarsContainer) {
-            const createShootingStar = () => {
-                const star = document.createElement('div');
-                star.classList.add('shooting-star');
-                star.style.top = `${Math.random() * 100}vh`;
-                star.style.left = '-50px'; 
-                star.style.width = `${Math.random() * 2 + 1}px`;
-                star.style.animationDuration = `${Math.random() * 2 + 1}s`;
-                star.style.animationDelay = `${Math.random() * 5}s`;
-                shootingStarsContainer.appendChild(star);
-                setTimeout(() => star.remove(), 4000);
-            };
-            Array(20).fill().forEach(createShootingStar);
+    // Shooting stars background creation (keep this as is)
+    const shootingStarsContainer = document.querySelector('.shooting-stars');
+    if (shootingStarsContainer) {
+        const createShootingStar = () => {
+            const star = document.createElement('div');
+            star.classList.add('shooting-star');
+            star.style.top = `${Math.random() * 100}vh`;
+            star.style.left = '-50px'; 
+            star.style.width = `${Math.random() * 2 + 1}px`;
+            star.style.animationDuration = `${Math.random() * 2 + 1}s`;
+            star.style.animationDelay = `${Math.random() * 5}s`;
+            shootingStarsContainer.appendChild(star);
+            setTimeout(() => star.remove(), 4000);
+        };
+        Array(20).fill().forEach(createShootingStar);
+    }
+    
+    // Set a date in the past for testing the "photos unlocked" state
+    // For production, change the year to 2026 or a date far in the future if the event is over.
+    const eventDate = new Date('Sep 15, 2025 09:00:00').getTime(); 
+    let countdownInterval = null;
+
+    // *** THE CRITICAL FIX IS HERE IN openModal ***
+    const openModal = (starNode) => {
+        const eventName = starNode.dataset.eventName || 'This Event';
+        const gdriveLink = starNode.dataset.gdriveLink;
+        // The event has passed if the current time is after the eventDate
+        const eventHasPassed = new Date().getTime() > eventDate; 
+        
+        // Clear any previous interval when opening a new modal
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+        }
+
+        let modalHTML = '';
+
+        if (eventHasPassed && gdriveLink && gdriveLink !== 'YOUR_LINK_HERE') {
+            // Case 1: Event passed AND a valid link is provided
+            modalHTML = `
+                <button class="modal-close" aria-label="Close modal"><i class="fas fa-times"></i></button>
+                <div class="modal-icon"><i class="fas fa-unlock-alt"></i></div>
+                <h2 class="modal-title">${eventName} - Photos Unlocked!</h2>
+                <p class="modal-text">The photos for this event are now available for download.</p>
+                <a href="${gdriveLink}" target="_blank" class="download-button"><i class="fas fa-download"></i><span>Download Photos</span></a>`;
+        } else if (eventHasPassed && (!gdriveLink || gdriveLink === 'YOUR_LINK_HERE')) {
+             // Case 2: Event passed BUT no valid link (shows a message)
+            modalHTML = `
+                <button class="modal-close" aria-label="Close modal"><i class="fas fa-times"></i></button>
+                <div class="modal-icon"><i class="fas fa-search"></i></div>
+                <h2 class="modal-title">${eventName} - Photos Coming Soon!</h2>
+                <p class="modal-text">This event is over, but the photo album link hasn't been added yet. Check back soon!</p>`;
+
+        } else {
+            // Case 3: Event has NOT passed (shows countdown)
+            modalHTML = `
+                <button class="modal-close" aria-label="Close modal"><i class="fas fa-times"></i></button>
+                <div class="modal-icon"><i class="fas fa-lock"></i></div>
+                <h2 class="modal-title">${eventName} - Time Capsule</h2>
+                <p class="modal-text">Photos will be revealed after the event concludes. The countdown begins!</p>
+                <div class="countdown-timer">
+                    <div class="time-block"><span id="days">00</span><small>Days</small></div>
+                    <div class="time-block"><span id="hours">00</span><small>Hours</small></div>
+                    <div class="time-block"><span id="minutes">00</span><small>Minutes</small></div>
+                    <div class="time-block"><span id="seconds">00</span><small>Seconds</small></div>
+                </div>`;
         }
         
-        const eventDate = new Date('Sep 15, 2025 09:00:00').getTime();
-        let countdownInterval = null;
+        modalContent.innerHTML = modalHTML;
+        modal.classList.add('is-visible');
 
-        const openModal = (starNode) => {
-            const eventName = starNode.dataset.eventName || 'This Event';
-            const gdriveLink = starNode.dataset.gdriveLink;
-            const eventHasPassed = new Date().getTime() > eventDate;
+        if (!eventHasPassed) {
+            startCountdown();
+        }
+    };
 
-            let modalHTML = '';
+    const closeModal = () => {
+        modal.classList.remove('is-visible');
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+        }
+    };
 
-            if (eventHasPassed) {
-                modalHTML = `
-                    <button class="modal-close" aria-label="Close modal"><i class="fas fa-times"></i></button>
-                    <div class="modal-icon"><i class="fas fa-unlock-alt"></i></div>
-                    <h2 class="modal-title">${eventName} - Photos Unlocked!</h2>
-                    <p class="modal-text">The photos for this event are now available for download.</p>
-                    <a href="${gdriveLink}" target="_blank" class="download-button"><i class="fas fa-download"></i><span>Download Photos</span></a>`;
-            } else {
-                modalHTML = `
-                    <button class="modal-close" aria-label="Close modal"><i class="fas fa-times"></i></button>
-                    <div class="modal-icon"><i class="fas fa-lock"></i></div>
-                    <h2 class="modal-title">${eventName} - Time Capsule</h2>
-                    <p class="modal-text">Photos will be revealed after the event concludes. The countdown begins!</p>
-                    <div class="countdown-timer">
-                        <div class="time-block"><span id="days">00</span><small>Days</small></div>
-                        <div class="time-block"><span id="hours">00</span><small>Hours</small></div>
-                        <div class="time-block"><span id="minutes">00</span><small>Minutes</small></div>
-                        <div class="time-block"><span id="seconds">00</span><small>Seconds</small></div>
-                    </div>`;
+    const startCountdown = () => {
+        if (countdownInterval) clearInterval(countdownInterval);
+        countdownInterval = setInterval(() => {
+            const now = new Date().getTime();
+            const distance = eventDate - now;
+
+            const daysEl = document.getElementById('days');
+            
+            if (distance < 0) {
+                clearInterval(countdownInterval);
+                const timerEl = document.querySelector('.countdown-timer');
+                if(timerEl) timerEl.innerHTML = "<p>The Event has begun!</p>";
+                
+                // If the event ends while the modal is open, we reload the modal content
+                // to show the 'unlocked' state, but only if the modal is still open.
+                if (modal.classList.contains('is-visible')) {
+                    // Find the star node that opened the modal (requires a small refactor)
+                    // For now, we'll just stop the countdown.
+                }
+                return;
             }
             
-            modalContent.innerHTML = modalHTML;
-            modal.classList.add('is-visible');
+            const days = Math.floor(distance / (1000*60*60*24));
+            const hours = Math.floor((distance % (1000*60*60*24)) / (1000*60*60));
+            const minutes = Math.floor((distance % (1000*60*60)) / (1000*60));
+            const seconds = Math.floor((distance % (1000*60)) / 1000);
 
-            if (!eventHasPassed) {
-                startCountdown();
-            }
-        };
+            const hoursEl = document.getElementById('hours');
+            const minutesEl = document.getElementById('minutes');
+            const secondsEl = document.getElementById('seconds');
 
-        const closeModal = () => {
-            modal.classList.remove('is-visible');
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-                countdownInterval = null;
-            }
-        };
+            if(daysEl) daysEl.innerText = String(days).padStart(2, '0');
+            if(hoursEl) hoursEl.innerText = String(hours).padStart(2, '0');
+            if(minutesEl) minutesEl.innerText = String(minutes).padStart(2, '0');
+            if(secondsEl) secondsEl.innerText = String(seconds).padStart(2, '0');
+        }, 1000);
+    };
 
-        const startCountdown = () => {
-            if (countdownInterval) clearInterval(countdownInterval);
-            countdownInterval = setInterval(() => {
-                const now = new Date().getTime();
-                const distance = eventDate - now;
-
-                if (distance < 0) {
-                    clearInterval(countdownInterval);
-                    const timerEl = document.querySelector('.countdown-timer');
-                    if(timerEl) timerEl.innerHTML = "<p>The Event is Live!</p>";
-                    return;
-                }
-                const days = Math.floor(distance / (1000*60*60*24));
-                const hours = Math.floor((distance % (1000*60*60*24)) / (1000*60*60));
-                const minutes = Math.floor((distance % (1000*60*60)) / (1000*60));
-                const seconds = Math.floor((distance % (1000*60)) / 1000);
-
-                const daysEl = document.getElementById('days');
-                const hoursEl = document.getElementById('hours');
-                const minutesEl = document.getElementById('minutes');
-                const secondsEl = document.getElementById('seconds');
-
-                if(daysEl) daysEl.innerText = String(days).padStart(2, '0');
-                if(hoursEl) hoursEl.innerText = String(hours).padStart(2, '0');
-                if(minutesEl) minutesEl.innerText = String(minutes).padStart(2, '0');
-                if(secondsEl) secondsEl.innerText = String(seconds).padStart(2, '0');
-            }, 1000);
-        };
-
-        starNodes.forEach(star => star.addEventListener('click', () => openModal(star)));
-        
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal || e.target.closest('.modal-close')) {
-                closeModal();
-            }
-        });
-        
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && modal.classList.contains('is-visible')) {
-                closeModal();
-            }
-        });
+    // Attach the *single* click handler to open the modal
+    starNodes.forEach(star => star.addEventListener('click', () => openModal(star)));
+    
+    // Close modal listeners (keep this as is)
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal || e.target.closest('.modal-close')) {
+            closeModal();
+        }
     });
-        document.querySelectorAll('.star-node').forEach(star => {
-  star.addEventListener('click', () => {
-    const driveLink = star.dataset.gdriveLink;
-    if (driveLink) {
-      window.open(driveLink, '_blank'); // opens in new tab
-    } else {
-      console.error('No Google Drive link found for this star');
-    }
-  });
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('is-visible')) {
+            closeModal();
+        }
+    });
 });
-
-    </script>
+</script>
 
     <footer class="enhanced-footer">
         <div class="container">
