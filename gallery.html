@@ -525,14 +525,14 @@
             </div>
     </div>
     
-   <script src="script.js" defer></script>
+  <script src="script.js" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const starNodes = document.querySelectorAll('.star-node');
     const modal = document.getElementById('gallery-modal');
     const modalContent = document.getElementById('modal-content');
     
-    // Parallax effect for starmap (keep this as is)
+    // --- Parallax and Starry Background (keeping this) ---
     const starmap = document.getElementById('starmap');
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
     if (starmap && !isMobile && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -545,14 +545,13 @@ document.addEventListener('DOMContentLoaded', () => {
         starmap.addEventListener('mouseleave', () => { starmap.style.transform = 'scale(1) rotateX(0deg) rotateY(0deg)'; });
     }
     
-    // Constellation line hover effect (keep this as is)
     starNodes.forEach(star => {
         const lineIDs = star.dataset.lines.split(',');
         star.addEventListener('mouseenter', () => lineIDs.forEach(id => document.getElementById(id)?.classList.add('is-active')));
         star.addEventListener('mouseleave', () => lineIDs.forEach(id => document.getElementById(id)?.classList.remove('is-active')));
     });
 
-    // Shooting stars background creation (keep this as is)
+    // ... Shooting Stars Code ...
     const shootingStarsContainer = document.querySelector('.shooting-stars');
     if (shootingStarsContainer) {
         const createShootingStar = () => {
@@ -568,18 +567,17 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         Array(20).fill().forEach(createShootingStar);
     }
-    
-    // Set a date in the past for testing the "photos unlocked" state
-    // For production, change the year to 2026 or a date far in the future if the event is over.
+    // ---------------------------------------------------
+
     const eventDate = new Date('Sep 15, 2025 09:00:00').getTime(); 
     let countdownInterval = null;
 
-    // *** THE CRITICAL FIX IS HERE IN openModal ***
     const openModal = (starNode) => {
         const eventName = starNode.dataset.eventName || 'This Event';
         const gdriveLink = starNode.dataset.gdriveLink;
-        // The event has passed if the current time is after the eventDate
-        const eventHasPassed = new Date().getTime() > eventDate; 
+        // Check if the link is the exact placeholder string
+        const linkIsPlaceholder = gdriveLink === 'YOUR_LINK_HERE';
+        const eventHasPassed = new Date().getTime() > eventDate;
         
         // Clear any previous interval when opening a new modal
         if (countdownInterval) {
@@ -589,24 +587,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let modalHTML = '';
 
-        if (eventHasPassed && gdriveLink && gdriveLink !== 'YOUR_LINK_HERE') {
-            // Case 1: Event passed AND a valid link is provided
+        if (eventHasPassed && !linkIsPlaceholder) {
+            // CASE 1: Event passed AND a valid link is provided (Star 1)
             modalHTML = `
                 <button class="modal-close" aria-label="Close modal"><i class="fas fa-times"></i></button>
                 <div class="modal-icon"><i class="fas fa-unlock-alt"></i></div>
                 <h2 class="modal-title">${eventName} - Photos Unlocked!</h2>
                 <p class="modal-text">The photos for this event are now available for download.</p>
                 <a href="${gdriveLink}" target="_blank" class="download-button"><i class="fas fa-download"></i><span>Download Photos</span></a>`;
-        } else if (eventHasPassed && (!gdriveLink || gdriveLink === 'YOUR_LINK_HERE')) {
-             // Case 2: Event passed BUT no valid link (shows a message)
+
+        } else if (eventHasPassed && linkIsPlaceholder) {
+             // CASE 2: Event passed BUT no valid link (Stars 2, 4, etc.)
             modalHTML = `
-                <button class="modal-close" aria-label="Close modal"><i class="fas fa-times"></i></button>
+                <button class="modal-close" aria-label="Close modal"><i class="fas fa-search"></i></button>
                 <div class="modal-icon"><i class="fas fa-search"></i></div>
                 <h2 class="modal-title">${eventName} - Photos Coming Soon!</h2>
                 <p class="modal-text">This event is over, but the photo album link hasn't been added yet. Check back soon!</p>`;
 
         } else {
-            // Case 3: Event has NOT passed (shows countdown)
+            // CASE 3: Event has NOT passed (shows countdown)
             modalHTML = `
                 <button class="modal-close" aria-label="Close modal"><i class="fas fa-times"></i></button>
                 <div class="modal-icon"><i class="fas fa-lock"></i></div>
@@ -618,14 +617,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="time-block"><span id="minutes">00</span><small>Minutes</small></div>
                     <div class="time-block"><span id="seconds">00</span><small>Seconds</small></div>
                 </div>`;
+            startCountdown(); // Start the countdown only if event hasn't passed
         }
         
         modalContent.innerHTML = modalHTML;
         modal.classList.add('is-visible');
-
-        if (!eventHasPassed) {
-            startCountdown();
-        }
     };
 
     const closeModal = () => {
@@ -648,13 +644,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 clearInterval(countdownInterval);
                 const timerEl = document.querySelector('.countdown-timer');
                 if(timerEl) timerEl.innerHTML = "<p>The Event has begun!</p>";
-                
-                // If the event ends while the modal is open, we reload the modal content
-                // to show the 'unlocked' state, but only if the modal is still open.
-                if (modal.classList.contains('is-visible')) {
-                    // Find the star node that opened the modal (requires a small refactor)
-                    // For now, we'll just stop the countdown.
-                }
+                // The modal should now be closed and reopened to show the 'unlocked' state, 
+                // but we will rely on the user closing and reopening it to simplify.
                 return;
             }
             
@@ -674,23 +665,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000);
     };
 
-    // Attach the *single* click handler to open the modal
-   starNodes.forEach(star => {
-    star.addEventListener('click', () => {
-        if (star.id === 'star1') {
-            // Bypass the modal for Star 1 to test the direct link
-            const driveLink = star.dataset.gdriveLink;
-            if (driveLink) {
-                window.open(driveLink, '_blank');
-            }
-        } else {
-            // All other stars still open the modal
-            openModal(star);
+    // The ONLY click handler for the stars (this opens the modal)
+    starNodes.forEach(star => star.addEventListener('click', () => openModal(star)));
+    
+    // Close modal listeners
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal || e.target.closest('.modal-close')) {
+            closeModal();
         }
     });
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('is-visible')) {
+            closeModal();
+        }
+    });
+
+    // REMOVE THE PREVIOUS TEMPORARY BLOCK IF YOU ADDED IT.
 });
 </script>
-
     <footer class="enhanced-footer">
         <div class="container">
             <a href="#main-content" class="back-to-top" aria-label="Back to top">
