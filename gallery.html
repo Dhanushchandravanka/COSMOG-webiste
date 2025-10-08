@@ -675,18 +675,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Attach the *single* click handler to open the modal
-    starNodes.forEach(star => star.addEventListener('click', () => openModal(star)));
-    
-    // Close modal listeners (keep this as is)
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal || e.target.closest('.modal-close')) {
-            closeModal();
-        }
-    });
-    
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal.classList.contains('is-visible')) {
-            closeModal();
+   starNodes.forEach(star => {
+    star.addEventListener('click', () => {
+        if (star.id === 'star1') {
+            // Bypass the modal for Star 1 to test the direct link
+            const driveLink = star.dataset.gdriveLink;
+            if (driveLink) {
+                window.open(driveLink, '_blank');
+            }
+        } else {
+            // All other stars still open the modal
+            openModal(star);
         }
     });
 });
